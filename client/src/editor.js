@@ -7,16 +7,16 @@ import { javascript } from "@codemirror/lang-javascript";
 
 class Editor extends Component {
   state = {
-    code: "",
+    code: "// Welcome to CollabPro ! \n// start to write code from here",
   };
   render() {
     return (
-      <div>
+      <div id="codemirror-editor">
         <CodeMirror
           value={this.state.code}
           theme={oneDark}
           height="900px"
-          width="500px"
+          width="1300px"
           extensions={[javascript({ jsx: true })]}
           onChange={(value, viewUpdate) => {
             this.setState({ code: value });

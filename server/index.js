@@ -2,15 +2,24 @@ const http = require("http");
 const express = require("express");
 const cors = require("cors");
 const socketio = require("socket.io");
-const router = express.Router();
+const querystring = require("query-string");
+const { ExpressPeerServer } = require("peer");
+const {
+  addUser,
+  removeUser,
+  getUser,
+  getUsersInsessionid,
+} = require("./users");
 const app = express();
-const fs = require("fs");
-const simpleGit = require("simple-git");
-app.use(cors());
-const server = http.createServer(app);
+var bodyParser = require("body-parser");
 
-let repo = null;
+const sessionRoutes = require("./routes/session");
 
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }));
+
+// parse application/json
+app.use(bodyParser.json());
 require("dotenv").config();
 const session = require("express-session");
 const passport = require("passport");
@@ -124,98 +133,153 @@ app.get(
   }
 );
 
-
-router.get("/", (req, res) => {
-  console.log(req.query.url);
-  const git = simpleGit.default();
-  repo = req.query.url;
-  git.clone(repo);
-  res.send({ response: "Done" }).status(200);
-  console.log("done");
+app.get("/joinsession/:sessionid", function (req, res) {
+  console.log("Session ID is ", req.params);
+  sessionId = req.params.sessionid;
+  isJoinSession = true;
+  res.redirect("http://localhost:5000/auth/google");
 });
 
-router.get("/delete", (req, res) => {
-  fs.rmdirSync(repo, { recursive: true });
-  res.send({ response: "Done deleting it" }).status(200);
+app.get("/logout", function (req, res) {
+  res.redirect("http://localhost:3000/");
 });
 
-app.use(router);
+// const router = express.Router();
 
-
-io.on("connect", (socket) => {
-  socket.on("join", ({ name, sessionid }, callback) => {
-    const { error, user } = addUser({ id: socket.id, name, sessionid });
-
-    if (error) return callback(error);
-
-    socket.join(user.sessionid);
-
-    socket.emit("message", {
-      user: "admin",
-      text: `${user.name}, welcome to sessionid ${user.sessionid}.`,
-    });
-    socket.broadcast.to(user.sessionid).emit("message", {
-      user: "admin",
-      text: `${user.name} has joined!`,
-    });
-
-    io.to(user.sessionid).emit("sessionidData", {
-      sessionid: user.sessionid,
-      users: getUsersInsessionid(user.sessionid),
-    });
-
+const fs = require("fs");
+const simpleGit = require("simple-git");
+var ShareDB = require("sharedb");
+const router = require("./router");
+var richText = require("rich-text");
+var WebSocket = require("ws");
+var WebSocketJSONStream = require("@teamwork/websocket-json-stream");
+ShareDB.types.register(richText.type);
+var backend = new ShareDB();
+createDoc(startServer);
+function createDoc(callback) {
+  var connection = backend.connect();
+  var doc = connection.get("examples", "richtext");
+  doc.fetch(function (err) {
+    if (err) throw err;
+    console.log("doc is ", doc);
+    if (doc.type === null) {
+      console.log("Creating new One !");
+      doc.create(
+        [{ insert: "// Welcome to CollabPro!" }],
+        "rich-text",
+        callback
+      );
+      return;
+    } else {
+      console.log("Already Present ! : ", doc.type);
+    }
     callback();
   });
-  socket.on("join-video", ({ id, sessionidId }) => {
-    console.log(id, sessionidId);
-    socket.join(sessionidId);
-    socket.to(sessionidId).broadcast.emit("user-connected", id);
-    socket.on("disconnect", () => {
-      socket.to(sessionidId).broadcast.emit("user-disconnected", id);
-    });
+}
+
+function startServer() {
+  // Create a web server to serve files and listen to WebSocket connections
+  // var app = express();
+  app.use(express.static("static"));
+  // app.use(router);
+  var sharedb_server = http.createServer(app);
+  var server = http.createServer(app);
+  const peerServer = ExpressPeerServer(server, {
+    debug: true,
   });
-  socket.on("send-ace-changes", (newValue) => {
-    console.log("Changes : ", newValue);
-    socket.broadcast.emit("receive-ace-changes", newValue);
-  });
-  socket.on("sendMessage", (message, callback) => {
-    const user = getUser(socket.id);
-
-    io.to(user.sessionid).emit("message", { user: user.name, text: message });
-
-    callback();
-  });
-  socket.on("get-document", (documentId) => {
-    const data = "";
-    // Implement getDocument function
-    socket.join(documentId);
-
-    socket.emit("load-document", data);
-
-    socket.on("send-text-changes", (delta) => {
-      socket.broadcast.to(documentId).emit("receive-text-changes", delta);
-    });
-    //Implement save changes event
+  app.use("/peerjs", peerServer);
+  const io = socketio(server, {
+    cors: {
+      origin: "http://localhost:3000",
+    },
   });
 
-  socket.on("disconnect", () => {
-    const user = removeUser(socket.id);
+  app.use(cors());
+  app.use(router);
+  app.use("/", sessionRoutes);
 
-    if (user) {
-      io.to(user.sessionid).emit("message", {
-        user: "Admin",
-        text: `${user.name} has left.`,
+  io.on("connect", (socket) => {
+    socket.on("join", ({ name, sessionid }, callback) => {
+      const { error, user } = addUser({ id: socket.id, name, sessionid });
+
+      if (error) return callback(error);
+
+      socket.join(user.sessionid);
+
+      socket.emit("message", {
+        user: "admin",
+        text: `${user.name}, welcome to sessionid ${user.sessionid}.`,
       });
+      socket.broadcast.to(user.sessionid).emit("message", {
+        user: "admin",
+        text: `${user.name} has joined!`,
+      });
+
       io.to(user.sessionid).emit("sessionidData", {
         sessionid: user.sessionid,
         users: getUsersInsessionid(user.sessionid),
       });
-    }
+
+      callback();
+    });
+    socket.on("join-video", ({ id, sessionidId }) => {
+      console.log(id, sessionidId);
+      socket.join(sessionidId);
+      socket.to(sessionidId).broadcast.emit("user-connected", id);
+      socket.on("disconnect", () => {
+        socket.to(sessionidId).broadcast.emit("user-disconnected", id);
+      });
+    });
+    socket.on("send-ace-changes", (newValue) => {
+      console.log("Changes : ", newValue);
+      socket.broadcast.emit("receive-ace-changes", newValue);
+    });
+    socket.on("sendMessage", (message, callback) => {
+      const user = getUser(socket.id);
+
+      io.to(user.sessionid).emit("message", { user: user.name, text: message });
+
+      callback();
+    });
+    socket.on("get-document", (documentId) => {
+      const data = "";
+      // Implement getDocument function
+      socket.join(documentId);
+
+      socket.emit("load-document", data);
+
+      socket.on("send-text-changes", (delta) => {
+        socket.broadcast.to(documentId).emit("receive-text-changes", delta);
+      });
+      //Implement save changes event
+    });
+
+    socket.on("disconnect", () => {
+      const user = removeUser(socket.id);
+
+      if (user) {
+        io.to(user.sessionid).emit("message", {
+          user: "Admin",
+          text: `${user.name} has left.`,
+        });
+        io.to(user.sessionid).emit("sessionidData", {
+          sessionid: user.sessionid,
+          users: getUsersInsessionid(user.sessionid),
+        });
+      }
+    });
   });
-});
+  server.listen(process.env.PORT || 5000, () =>
+    console.log(`Server has started at 5000`)
+  );
+  // Connect any incoming WebSocket connection to ShareDB
+  var wss = new WebSocket.Server({ server: sharedb_server });
+  wss.on("connection", function (ws) {
+    console.log("HIIIIQ");
+    var stream = new WebSocketJSONStream(ws);
+    backend.listen(stream);
+  });
 
-
-
-server.listen(process.env.PORT || 5000, () =>
-  console.log(`Server has started.`)
-);
+  sharedb_server.listen(8080);
+  console.log("ShareDB listening on http://localhost:8080");
+}

@@ -31,9 +31,9 @@ class HomePage extends Component {
 
         <div style={{ marginTop: "40px" }}>
           <center>
-            <a href="/editor">
+            {/* <a href="/editor">
               <button style={{ fontSize: "20px" }}>New Editor </button>
-            </a>
+            </a> */}
           </center>
         </div>
       </div>

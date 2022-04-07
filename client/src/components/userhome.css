@@ -1,0 +1,53 @@
+#session-form {
+  margin-top: 20px;
+  margin-right: 20px;
+  margin-bottom: 20px;
+  margin-left: 90px;
+  width: 70%;
+}
+#session-form-name {
+  margin-top: 20px;
+  margin-right: 20px;
+  margin-bottom: 20px;
+  margin-left: 90px;
+  width: 50%;
+}
+#session-form-filename {
+  margin-top: 20px;
+  margin-right: 20px;
+  margin-bottom: 20px;
+  margin-left: 90px;
+  width: 50%;
+}
+
+#session-form-gitrepo {
+  margin-top: 20px;
+  margin-right: 20px;
+  margin-bottom: 20px;
+  margin-left: 90px;
+  width: 50%;
+}
+
+#session-form-createbtn {
+  margin-top: 20px;
+  margin-right: 20px;
+  margin-bottom: 20px;
+  margin-left: 90px;
+  width: 50%;
+}
+
+#session-join-form {
+  margin-top: 50px;
+  margin-right: 30px;
+  margin-left: 90px;
+}
+
+#session-join-form-link {
+  width: 500px;
+  margin-left: 90px;
+}
+
+#session-join-form-joinbtn {
+  margin: 20px;
+  margin-left: 90px;
+}

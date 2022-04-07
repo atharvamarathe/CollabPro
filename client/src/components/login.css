@@ -1,0 +1,27 @@
+#email-id {
+  margin-top: 40px;
+  margin-left: 40px;
+  margin-right: 40px;
+  margin-bottom: 10px;
+  width: 90%;
+}
+
+#password {
+  margin-top: 20px;
+  margin-left: 40px;
+  margin-right: 40px;
+  margin-bottom: 10px;
+  width: 90%;
+}
+
+#login {
+  margin-left: 40px;
+  margin-right: 40px;
+  margin-bottom: 10px;
+  margin-top: 10px;
+  width: 90%;
+}
+
+#login-window {
+  margin-top: 100px;
+}

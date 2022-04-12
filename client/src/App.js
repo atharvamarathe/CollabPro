@@ -4,20 +4,31 @@ import HomePage from "./components/home";
 import { BrowserRouter as Router, Switch, Route } from "react-router-dom";
 import Login from "./components/Login";
 import UserHome from "./components/userhome";
+import collab_img from "./components/image.png";
+import BackGroundImg from "./background.png";
+
 import Session from "./components/session";
 function App() {
+  let sessionName = "Coding Session";
+  let filename = "code.js";
+  function setSessionName(name) {
+    sessionName = name;
+  }
+  function setFileName(fname) {
+    filename = fname;
+  }
   return (
     <div className="App">
       <Router>
         <Switch>
           <Route exact path="/">
-            <div style={{ display: "flex" }}>
-              <div style={{ width: "75%" }}>
-                <HomePage />
-              </div>
-              <div>
-                <Login />
-              </div>
+            <div
+              style={{
+                backgroundImage: `url(${BackGroundImg})`,
+                height: "100vh",
+              }}
+            >
+              <HomePage />
             </div>
           </Route>
           <Route exact path="/editor">
@@ -30,15 +41,17 @@ function App() {
           <Route
             exact
             path="/userhome/:userid/:username"
-            render={(props) => <UserHome {...props} />}
+            render={(props) => (
+              <UserHome
+                {...props}
+                setsname={setSessionName}
+                setfname={setFileName}
+              />
+            )}
           />
-          {/* <div> */}
-          {/* <UserHome /> */}
-          {/* </div> */}
-          {/* </Route> */}
           <Route exact path="/session">
             <div>
-              <Session />
+              <Session sname={sessionName} fname={filename} />
             </div>
           </Route>
         </Switch>
